@@ -1,60 +1,47 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven3'
+    }
+
     environment {
         SONARQUBE_ENV = 'sonarqube'
-        SLACK_CHANNEL = ‎'#jenkins-notifier'
-        // 'SonarScanner' must match the SonarQube Scanner installation
-        // name configured in Part 1, Step 1.2
-        SCANNER_HOME = tool 'SonarScanner'
     }
 
     stages {
 
-        stage('Git Clone') {
+        stage('Build') {
             steps {
-                echo 'Cloning source code from GitHub...'
-                git branch: 'main',
-                    url: 'https://github.com/Rajesh33-11/hiring-app'
+                echo 'Building Hiring App...'
                 sh 'ls -la'
+                sh 'mvn clean verify'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                echo 'Running SonarCloud static code analysis...'
-                withSonarQubeEnv("${SONARQUBE_ENV}") {
-                    sh "${SCANNER_HOME}/bin/sonar-scanner"
-                }
-            }
-        }
+                echo 'Running SonarQube static code analysis...'
 
-        stage('Slack Notification') {
-            steps {
-                echo 'Sending build result to Slack...'
-                slackSend(
-                    channel: "${SLACK_CHANNEL}",
-                    color: 'good',
-                    message: "✅ Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
-                )
+                withSonarQubeEnv("${SONARQUBE_ENV}") {
+                    sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.2.0.4988:sonar'
+                }
             }
         }
     }
 
     post {
+
+        success {
+            echo 'Hiring App build completed successfully.'
+        }
+
         failure {
-            slackSend(
-                channel: "${SLACK_CHANNEL}",
-                color: 'danger',
-                message: "❌ Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
-            )
+            echo 'Hiring App build failed.'
+        }
+
+        always {
+            echo "Hiring App build completed with status: ${currentBuild.currentResult}"
         }
     }
 }
-
-
-
-
-
-
-
