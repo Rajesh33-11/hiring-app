@@ -1,47 +1,54 @@
 pipeline {
     agent any
 
-        environment {
-        IMAGE_TAG = "${BUILD_NUMBER}"
+    environment {
+        SONARQUBE_ENV = 'MySonarQubeServer'
+        SLACK_CHANNEL = '#jenkins-alerts'
+        // 'SonarScanner' must match the SonarQube Scanner installation
+        // name configured in Part 1, Step 1.2
+        SCANNER_HOME = tool 'SonarScanner'
     }
 
     stages {
-        
-       
-        stage('Docker Build') {
+
+        stage('Git Clone') {
             steps {
-                sh "docker build . -t sabair0509/hiring-app:$BUILD_NUMBER"
+                echo 'Cloning source code from GitHub...'
+                git branch: 'main',
+                    url: 'https://github.com/betawins/hiring-app.git'
+                sh 'ls -la'
             }
         }
-        stage('Docker Push') {
+
+        stage('SonarQube Analysis') {
             steps {
-                withCredentials([string(credentialsId: 'docker-hub', variable: 'hubPwd')]) {
-                    sh "docker login -u sabair0509 -p ${hubPwd}"
-                    sh "docker push sabair0509/hiring-app:$BUILD_NUMBER"
+                echo 'Running SonarCloud static code analysis...'
+                withSonarQubeEnv("${SONARQUBE_ENV}") {
+                    sh "${SCANNER_HOME}/bin/sonar-scanner"
                 }
             }
         }
-        stage('Checkout K8S manifest SCM'){
+
+        stage('Slack Notification') {
             steps {
-              git branch: 'main', url: 'https://github.com/betawins/Hiring-app-argocd.git'
+                echo 'Sending build result to Slack...'
+                slackSend(
+                    channel: "${SLACK_CHANNEL}",
+                    color: 'good',
+                    message: "✅ Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
+                )
             }
-        } 
-        stage('Update K8S manifest & push to Repo'){
-            steps {
-                script{
-                   withCredentials([usernamePassword(credentialsId: 'Github_server', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) { 
-                        sh '''
-                        cat /var/lib/jenkins/workspace/$JOB_NAME/dev/deployment.yaml
-                        sed -i "s/5/${BUILD_NUMBER}/g" /var/lib/jenkins/workspace/$JOB_NAME/dev/deployment.yaml
-                        cat /var/lib/jenkins/workspace/$JOB_NAME/dev/deployment.yaml
-                        git add .
-                        git commit -m 'Updated the deploy yaml | Jenkins Pipeline'
-                        git remote -v
-                        git push https://$GIT_USERNAME:$GIT_PASSWORD@github.com/betawins/Hiring-app-argocd.git main
-                        '''                        
-                      }
-                  }
-            }   
         }
-            }
-} 
+    }
+
+    post {
+        failure {
+            slackSend(
+                channel: "${SLACK_CHANNEL}",
+                color: 'danger',
+                message: "❌ Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
+            )
+        }
+    }
+}
+
