@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        SONARQUBE_ENV = 'MySonarQubeServer'
-        SLACK_CHANNEL = '#jenkins-alerts'
+        SONARQUBE_ENV = 'sonarqube'
+        SLACK_CHANNEL = ‎'#jenkins-notifier'
         // 'SonarScanner' must match the SonarQube Scanner installation
         // name configured in Part 1, Step 1.2
         SCANNER_HOME = tool 'SonarScanner'
@@ -15,7 +15,7 @@ pipeline {
             steps {
                 echo 'Cloning source code from GitHub...'
                 git branch: 'main',
-                    url: 'https://github.com/betawins/hiring-app.git'
+                    url: 'https://github.com/Rajesh33-11/hiring-app'
                 sh 'ls -la'
             }
         }
