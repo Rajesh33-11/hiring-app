@@ -1,0 +1,51 @@
+pipeline {
+    agent any
+
+    parameters {
+        choice(name: 'ENVIRONMENT', choices: ['dev', 'staging', 'prod'],
+               description: 'Target deployment environment')
+        booleanParam(name: 'RUN_TESTS', defaultValue: true,
+               description: 'Run the unit test stage?')
+    }
+
+    environment {
+        APP_NAME = 'hiring-app'
+        BUILD_ENV = "${params.ENVIRONMENT}"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "Cloning ${APP_NAME} for environment: ${BUILD_ENV}"
+                git branch: 'main',
+                    url: 'https://github.com/Rajesh33-11/hiring-app.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo "Building ${APP_NAME} for ${BUILD_ENV}..."
+                sh 'ls -la'
+                // Replace with the real build command for this project,
+                // e.g. 'npm ci && npm run build' or 'mvn -B package'
+            }
+        }
+
+        stage('Test') {
+            when {
+                expression { return params.RUN_TESTS }
+            }
+            steps {
+                echo 'Running unit tests...'
+                sh 'echo "(placeholder) test command goes here"'
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline finished for ${APP_NAME} — environment: ${BUILD_ENV}, tests run: ${params.RUN_TESTS}"
+        }
+    }
+}
+
