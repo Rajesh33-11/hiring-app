@@ -1,0 +1,71 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME = 'hiring-app'
+        DEPLOY_DIR = '/opt/hiring-app-deploy'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "Cloning ${APP_NAME}..."
+                git branch: 'main', url: 'https://github.com/Rajesh33-11/hiring-app.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Building application...'
+                sh 'ls -la'
+                // e.g. 'npm ci && npm run build' or 'mvn -B compile'
+            }
+        }
+
+        stage('Unit Test') {
+            steps {
+                echo 'Running unit tests...'
+                sh 'echo "(placeholder) unit test command"'
+            }
+        }
+
+        stage('Code Quality Check') {
+            steps {
+                echo 'Running static analysis...'
+                sh 'echo "(placeholder) lint/SonarQube step"'
+            }
+        }
+
+        stage('Package') {
+            steps {
+                echo 'Packaging build artifact...'
+                sh 'tar -czf ${APP_NAME}-${BUILD_NUMBER}.tar.gz --exclude=.git .'
+                archiveArtifacts artifacts: "${APP_NAME}-${BUILD_NUMBER}.tar.gz", fingerprint: true
+            }
+        }
+
+        stage('Deploy to Staging') {
+            steps {
+                echo "Deploying ${APP_NAME} build #${BUILD_NUMBER} to staging..."
+                sh 'echo "(placeholder) copy artifact to staging host / run deploy script"'
+            }
+        }
+
+        stage('Smoke Test') {
+            steps {
+                echo 'Running post-deployment smoke test...'
+                sh 'echo "(placeholder) curl the staging health-check endpoint"'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Pipeline succeeded: ${APP_NAME} build #${BUILD_NUMBER} deployed to staging."
+        }
+        failure {
+            echo "Pipeline failed at some stage for ${APP_NAME} build #${BUILD_NUMBER}."
+        }
+    }
+}
+
