@@ -1,0 +1,42 @@
+node {
+    def appName = 'hiring-app'
+    def modules = ['auth', 'jobs', 'candidates']
+
+    try {
+        stage('Checkout') {
+            echo "Cloning ${appName}..."
+            git branch: 'main', url: 'https://github.com/Rajesh33-11/hiring-app.git'
+        }
+
+        stage('Build') {
+            echo "Building ${appName}..."
+            sh 'ls -la'
+        }
+
+        stage('Use a Credential Securely') {
+            withCredentials([string(credentialsId: 'demo-api-key', variable: 'API_KEY')]) {
+                // Single-quoted Groovy string: $API_KEY is expanded by the SHELL,
+                // never by Groovy — this is what lets Jenkins mask the secret
+                // in the console log. Never use a double-quoted "${API_KEY}" here.
+                sh 'echo "Credential loaded, length: ${#API_KEY} characters"'
+            }
+        }
+
+        stage('Validate Modules (loop example)') {
+            for (m in modules) {
+                echo "Validating module: ${m}"
+            }
+        }
+
+    } catch (Exception e) {
+        echo "Pipeline failed: ${e.getMessage()}"
+        currentBuild.result = 'FAILURE'
+        throw e
+    } finally {
+        stage('Cleanup') {
+            echo 'Cleaning workspace...'
+            deleteDir()
+        }
+    }
+}
+
