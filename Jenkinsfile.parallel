@@ -1,0 +1,61 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME = 'hiring-app'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "Cloning ${APP_NAME}..."
+                git branch: 'main', url: 'https://github.com/Rajesh33-11/hiring-app.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Building application...'
+                sh 'ls -la'
+            }
+        }
+
+        stage('Quality Gates (parallel)') {
+            parallel {
+                stage('Unit Tests') {
+                    steps {
+                        echo 'Running unit tests...'
+                        sh 'sleep 5; echo "(placeholder) unit test command"'
+                    }
+                }
+                stage('Lint') {
+                    steps {
+                        echo 'Running linter...'
+                        sh 'sleep 5; echo "(placeholder) lint command"'
+                    }
+                }
+                stage('Security Scan') {
+                    steps {
+                        echo 'Running dependency/security scan...'
+                        sh 'sleep 5; echo "(placeholder) security scan command"'
+                    }
+                }
+            }
+        }
+
+        stage('Package') {
+            steps {
+                echo 'All quality gates passed — packaging build artifact...'
+                sh 'tar -czf ${APP_NAME}-${BUILD_NUMBER}.tar.gz --exclude=.git .'
+                archiveArtifacts artifacts: "${APP_NAME}-${BUILD_NUMBER}.tar.gz", fingerprint: true
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline finished for ${APP_NAME} build #${BUILD_NUMBER}."
+        }
+    }
+}
+
